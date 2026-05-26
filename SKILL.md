@@ -1,13 +1,13 @@
 ---
 name: claude-code-dual-provider
-description: Claude Code 配置 Kimi + MiniMax + 智谱/GLM 三 Provider 指南，包含切换命令、设置方法、常见问题
+description: Claude Code 免登录接入国产大模型 — Kimi · MiniMax · 智谱 GLM 三 Provider 一键切换
 ---
 
-# Claude Code 三 Provider 配置指南
+# Claude Code 免登录接入国产大模型 — Kimi · MiniMax · 智谱 GLM 三 Provider 一键切换
 
 ## 概述
 
-Claude Code 可配置 **Kimi**、**MiniMax** 和 **智谱/GLM** 三个 API Provider，通过配置文件切换。
+Claude Code 可配置 **Kimi**、**MiniMax** 和 **智谱 GLM** 三个 API Provider，通过配置文件切换。
 
 ## API 配置信息
 
@@ -19,7 +19,7 @@ Claude Code 可配置 **Kimi**、**MiniMax** 和 **智谱/GLM** 三个 API Provi
 | MiniMax（标准） | `https://api.minimaxi.com/anthropic` | `sk-cp-...` | `MiniMax-M2.7` |
 | Kimi Coding Plan | `https://api.kimi.com/coding/` | `sk-kimi-...` | `kimi-for-coding` |
 | 月之暗面（普通） | `https://api.moonshot.cn/anthropic/` | `sk-...` | `kimi-k2-turbo-preview` |
-| 智谱/GLM Coding Plan | `https://open.bigmodel.cn/api/anthropic` | 智谱 API Key | `GLM-5.1` / `GLM-5-Turbo` |
+| 智谱 GLM Coding Plan | `https://open.bigmodel.cn/api/anthropic` | 智谱 API Key | `GLM-5.1` / `GLM-5-Turbo` |
 
 ### 区分 Kimi 两个端点
 
@@ -52,7 +52,7 @@ Claude Code 必须用 Anthropic 兼容端点 `api/anthropic`，不能用 OpenAI 
 配置文件：
 - `settings-minimax.json` - MiniMax 配置
 - `settings-kimi.json` - Kimi 配置
-- `settings-zhipu.json` - 智谱/GLM 配置
+- `settings-zhipu.json` - 智谱 GLM 配置
 - `settings.json` - **当前生效配置**（由 `use-kimi`/`use-minimax`/`use-zhipu` 复制覆盖）
 
 ### 配置文件结构
@@ -140,7 +140,7 @@ Claude Code 必须用 Anthropic 兼容端点 `api/anthropic`，不能用 OpenAI 
 ```bash
 use-kimi      # 切换到 Kimi API（复制 settings-kimi.json → settings.json）
 use-minimax   # 切换到 MiniMax API（复制 settings-minimax.json → settings.json）
-use-zhipu     # 切换到 智谱/GLM API（复制 settings-zhipu.json → settings.json）
+use-zhipu     # 切换到智谱 GLM API（复制 settings-zhipu.json → settings.json）
 ```
 
 ### Windows PowerShell
@@ -159,7 +159,7 @@ function use-zhipu {
     $target = "$env:USERPROFILE\.claude\settings.json"
     if (Test-Path $source) {
         Copy-Item $source $target -Force
-        Write-Host "[claude-code] 已切换到 智谱/GLM 配置" -ForegroundColor Cyan
+        Write-Host "[claude-code] 已切换到智谱 GLM 配置" -ForegroundColor Cyan
     } else {
         Write-Error "settings-zhipu.json 不存在，请先创建配置文件"
     }
@@ -219,7 +219,7 @@ PowerShell Profile 路径（按版本）：
 ```bash
 ck   # 切换到 Kimi + 启动 Claude Code + max 思考强度
 cm   # 切换到 MiniMax + 启动 Claude Code + max 思考强度
-cz   # 切换到 智谱/GLM + 启动 Claude Code + max 思考强度
+cz   # 切换到智谱 GLM + 启动 Claude Code + max 思考强度
 cc   # 仅启动 Claude Code + max 思考强度（不切换 API）
 claude  # 原生命令（无思考强度设置）
 ```
@@ -422,7 +422,7 @@ curl https://api.minimaxi.com/anthropic/v1/models \
 curl https://api.kimi.com/coding/v1/models \
   -H "Authorization: Bearer <KIMI_KEY>"
 
-# 测试智谱/GLM
+# 测试智谱 GLM
 curl https://open.bigmodel.cn/api/anthropic/v1/models \
   -H "Authorization: Bearer <ZHIPU_KEY>"
 ```
@@ -433,7 +433,7 @@ curl https://open.bigmodel.cn/api/anthropic/v1/models \
 |------|---------------|--------------------------|------------------------|
 | MiniMax 配置 | `~/.claude/settings-minimax.json` | `C:\Users\用户名\.claude\settings-minimax.json` | 同左 |
 | Kimi 配置 | `~/.claude/settings-kimi.json` | `C:\Users\用户名\.claude\settings-kimi.json` | 同左 |
-| 智谱/GLM 配置 | `~/.claude/settings-zhipu.json` | `C:\Users\用户名\.claude\settings-zhipu.json` | 同左 |
+| 智谱 GLM 配置 | `~/.claude/settings-zhipu.json` | `C:\Users\用户名\.claude\settings-zhipu.json` | 同左 |
 | 当前生效配置 | `~/.claude/settings.json` | `C:\Users\用户名\.claude\settings.json` | 同左 |
 | Shell 配置 | `~/.zshrc` | `C:\Users\用户名\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1` | `C:\Users\用户名\Documents\PowerShell\Microsoft.PowerShell_profile.ps1` |
 | Claude Code 别名 | `ck`, `cm`, `cz`, `cc`（在 zshrc 中） | `ck`, `cm`, `cz`, `cc`（在 PowerShell Profile 中） | 同左 |
@@ -487,12 +487,12 @@ cat ~/.claude/plugins/installed_plugins.json
 ```
 ck              → Kimi API + max 思考强度
 cm              → MiniMax API + max 思考强度
-cz              → 智谱/GLM API + max 思考强度
+cz              → 智谱 GLM API + max 思考强度
 cc              → 不切换 API + max 思考强度
 
 use-kimi        → 切换到 Kimi 配置
 use-minimax     → 切换到 MiniMax 配置
-use-zhipu       → 切换到 智谱/GLM 配置
+use-zhipu       → 切换到 智谱 GLM 配置
 
 /model kimi-for-coding       → 切换模型（不换 API，不推荐）
 /model MiniMax-M2.7-highspeed → 切换模型（不换 API，不推荐）

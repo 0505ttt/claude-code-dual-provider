@@ -1,8 +1,8 @@
 <div align="center">
 
-# Claude Code 三 Provider 配置 Skill
+# Claude Code 免登录接入国产大模型 — Kimi · MiniMax · 智谱 GLM 三 Provider 一键切换 Skill
 
-**安装此 Skill 后，AI 自动帮你配置 Kimi / MiniMax / 智谱 GLM 三 Provider，无需 Claude 官方账号**
+**绕过 Claude 官方登录，AI 自动帮你配置 Kimi / MiniMax / 智谱 GLM 三个国产大模型 Provider，一条命令随时切换**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![macOS](https://img.shields.io/badge/platform-macOS-blue.svg)]()
@@ -51,13 +51,13 @@ Invoke-WebRequest -Uri "https://raw.githubusercontent.com/0505ttt/claude-code-du
 
 2. 重启 Claude Code，AI 会自动加载此 Skill。
 
-3. 在 Claude Code 中告诉 AI 你想配置哪个 Provider，例如：
+3. 在 Claude Code 中执行此 Skill：
 
 ```
-帮我配置智谱 GLM 的 Claude Code 接入
+/claude-code-dual-provider
 ```
 
-AI 会读取 Skill 内容，引导你完成所有配置。
+AI 会读取 Skill 内容，引导你完成全部三个 Provider 的配置。
 
 ### 方式二：克隆整个仓库
 
@@ -70,19 +70,22 @@ git clone https://github.com/0505ttt/claude-code-dual-provider.git
 ## 它怎么工作？
 
 ```
-你告诉 AI "帮我配置智谱 GLM"
+你告诉 AI "帮我配置 Claude Code 接入国产大模型"
         ↓
 AI 读取 SKILL.md 中的配置指南
         ↓
 AI 自动完成：
-  ├── 创建 ~/.claude.json（绕过登录）
-  ├── 创建 ~/.claude/settings-zhipu.json（智谱配置）
+  ├── 创建 ~/.claude.json（绕过官方登录）
+  ├── 创建 ~/.claude/settings-zhipu.json（智谱 GLM 配置）
   ├── 创建 ~/.claude/settings-kimi.json（Kimi 配置）
   ├── 创建 ~/.claude/settings-minimax.json（MiniMax 配置）
   ├── 配置 Shell 别名（use-kimi / use-minimax / use-zhipu / ck / cm / cz / cc）
   └── 验证配置是否生效
         ↓
-你运行 cz 即可使用智谱 GLM
+三个 Provider 全部就绪
+  ├── ck → 启动 Kimi
+  ├── cm → 启动 MiniMax
+  └── cz → 启动智谱 GLM
 ```
 
 ## 命令速查
