@@ -9,7 +9,7 @@ description: Claude Code 免登录接入国产大模型 — Kimi · MiniMax · �
 
 Claude Code 可配置 **Kimi**、**MiniMax** 和 **智谱 GLM** 三个 API Provider，通过 `use-model` 脚本智能切换。
 
-> **v2 更新**：不再使用 `cp` 覆盖 settings.json，改用 `use-model` 脚本只修改模型字段，切换时不会丢失插件、权限和 MCP 配置。
+> **v2 更新**：不再使用 `cp` 覆盖 settings.json，改用 `use-model` 脚本只修改模型字段，切换时不会丢失插件、权限和 MCP 配置。新增状态栏模型名自动显示。
 
 ## API 配置信息
 
@@ -46,53 +46,58 @@ Claude Code 必须用 Anthropic 兼容端点 `api/anthropic`。
 
 **macOS / Linux：**
 
-将 `use-model` 脚本下载到 PATH 中的目录（如 `~/npm-global/bin/` 或 `/usr/local/bin/`）：
-
 ```bash
 # 确保目标目录存在且在 PATH 中
 mkdir -p ~/npm-global/bin
 
-# 下载脚本（二选一）
-# 方式 A：从本仓库下载
+# 下载脚本
 curl -o ~/npm-global/bin/use-model \
   https://raw.githubusercontent.com/0505ttt/claude-code-dual-provider/main/use-model
 chmod +x ~/npm-global/bin/use-model
-
-# 方式 B：手动创建
-# 将本仓库中的 use-model 文件复制到 ~/npm-global/bin/
 ```
 
 编辑脚本，将 `PROFILES` 中的 API Key 替换为你的真实 Key：
 
 ```bash
 nano ~/npm-global/bin/use-model
-# 或
-code ~/npm-global/bin/use-model
 ```
 
 **Windows PowerShell：**
 
-将 `use-model.ps1` 脚本下载到 PATH 中的目录：
-
 ```powershell
-# 创建 bin 目录
 $binDir = "$env:USERPROFILE\bin"
 New-Item -ItemType Directory -Path $binDir -Force | Out-Null
 
-# 下载脚本
 Invoke-WebRequest -Uri "https://raw.githubusercontent.com/0505ttt/claude-code-dual-provider/main/use-model.ps1" `
   -OutFile "$binDir\use-model.ps1"
 
-# 确保 $env:USERPROFILE\bin 在 PATH 中
+# 确保 PATH
 $currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($currentPath -notlike "*$binDir*") {
     [Environment]::SetEnvironmentVariable("Path", "$currentPath;$binDir", "User")
 }
 ```
 
-编辑脚本，将 `$Profiles` 中的 API Key 替换为你的真实 Key。
+### 第二步：安装状态栏脚本
 
-### 第二步：配置 Shell 别名
+**macOS / Linux：**
+
+```bash
+mkdir -p ~/.claude/helpers
+
+curl -o ~/.claude/helpers/statusline.js \
+  https://raw.githubusercontent.com/0505ttt/claude-code-dual-provider/main/helpers/statusline.js
+```
+
+**Windows PowerShell：**
+
+```powershell
+New-Item -ItemType Directory -Path "$env:USERPROFILE\.claude\helpers" -Force | Out-Null
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/0505ttt/claude-code-dual-provider/main/helpers/statusline.js" `
+  -OutFile "$env:USERPROFILE\.claude\helpers\statusline.js"
+```
+
+### 第三步：配置 Shell 别名
 
 #### macOS / Linux（zsh）
 
@@ -139,13 +144,13 @@ function cc {
 }
 ```
 
-**重要**：该文件必须保存为 **UTF-8 with BOM** 编码，否则中文字符串会导致 PowerShell 解析语法错误。
+**重要**：该文件必须保存为 **UTF-8 with BOM** 编码。
 
 PowerShell Profile 路径（按版本）：
 - **Windows PowerShell 5.1**：`C:\Users\用户名\Documents\WindowsPowerShell\Microsoft.PowerShell_profile.ps1`
 - **PowerShell 7+ (pwsh)**：`C:\Users\用户名\Documents\PowerShell\Microsoft.PowerShell_profile.ps1`
 
-### 第三步：绕过登录
+### 第四步：绕过登录 + 初始配置
 
 **macOS / Linux：**
 ```bash
@@ -165,7 +170,11 @@ cat > ~/.claude/settings.json << 'EOF'
     "API_TIMEOUT_MS": "3000000",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1
   },
-  "language": "chinese"
+  "language": "chinese",
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/helpers/statusline.js"
+  }
 }
 EOF
 ```
@@ -188,28 +197,57 @@ New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
     "API_TIMEOUT_MS": "3000000",
     "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": 1
   },
-  "language": "chinese"
+  "language": "chinese",
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/helpers/statusline.js"
+  }
 }
 '@ | Set-Content "$claudeDir\settings.json" -Encoding UTF8
 ```
 
-### 第四步：验证
+> **注意**：`statusLine` 必须是 **object 格式**（`{"type": "command", "command": "..."}`），不能是 string 格式（`"node ..."`）。string 格式会导致状态栏不显示。
+
+### 第五步：验证
 
 ```bash
-# 启动 Claude Code
 cz    # 用智谱 GLM 启动
-
-# 在 Claude Code 内验证
-/status
+# 状态栏应显示 GLM-5.1 模型名
 ```
+
+## 状态栏配置
+
+状态栏脚本 `statusline.js` 会自动读取 `ANTHROPIC_MODEL` 环境变量，显示当前使用的模型名称。
+
+**关键配置：**
+
+1. 脚本位置：`~/.claude/helpers/statusline.js`
+2. 模型名读取：`process.env.ANTHROPIC_MODEL || 'Unknown'`
+3. settings.json 中 `statusLine` 格式：
+```json
+"statusLine": {
+  "type": "command",
+  "command": "node ~/.claude/helpers/statusline.js"
+}
+```
+
+**Windows 用户**路径改为：
+```json
+"statusLine": {
+  "type": "command",
+  "command": "node %USERPROFILE%\\.claude\\helpers\\statusline.js"
+}
+```
+
+**切换模型后自动更新**：`use-model` 修改 `ANTHROPIC_MODEL`，下次启动 Claude Code 时状态栏自动显示新模型名。
 
 ## 启动命令
 
 ```bash
-ck   # 切换到 Kimi + 启动 Claude Code + max 思考强度
-cm   # 切换到 MiniMax + 启动 Claude Code + max 思考强度
-cz   # 切换到智谱 GLM + 启动 Claude Code + max 思考强度
-cc   # 仅启动 Claude Code + max 思考强度（不切换 API）
+ck   # 切换到 Kimi + 启动 + 状态栏显示 kimi-for-coding
+cm   # 切换到 MiniMax + 启动 + 状态栏显示 MiniMax-M3
+cz   # 切换到智谱 GLM + 启动 + 状态栏显示 GLM-5.1
+cc   # 不切换 API + 启动
 
 # 仅切换，不启动
 use-model kimi      # 切换到 Kimi
@@ -231,7 +269,7 @@ use-model kimi
     │      (BASE_URL, AUTH_TOKEN, MODEL,
     │       SONNET_MODEL, OPUS_MODEL, HAIKU_MODEL)
     ├── 7. 保留其他所有字段不动
-    │      (enabledPlugins, permissions, MCP, etc.)
+    │      (enabledPlugins, permissions, statusLine, MCP, etc.)
     ├── 8. 原子写入（先 .tmp 再 rename）
     └── 9. 释放锁，显示状态
 ```
@@ -243,11 +281,9 @@ use-model kimi
 | Opus / Sonnet | GLM-5.1 | 默认模型，最强推理能力 |
 | Haiku | GLM-5-Turbo | 快速响应，轻量任务 |
 
-如需使用其他模型，修改 `use-model` 脚本中 `PROFILES` 的模型名称即可。
-
 ### 切换模型（智谱）
 
-如需降级为 GLM-4.7，修改 `use-model` 脚本：
+修改 `use-model` 脚本中 PROFILES：
 ```python
 "zhipu": {
     "ANTHROPIC_MODEL": "GLM-4.7",
@@ -265,8 +301,6 @@ use-model kimi
 **macOS / Linux：**
 ```bash
 nano ~/npm-global/bin/use-model
-# 或
-code ~/npm-global/bin/use-model
 ```
 
 **Windows：**
@@ -278,11 +312,7 @@ notepad "$env:USERPROFILE\bin\use-model.ps1"
 
 ## /config 设置
 
-在 Claude Code 内输入 `/config` 进入设置菜单，可设置：
-- `Output style` → `Explanatory`
-- `Verbose output` → `true`
-- `Default permission mode` → `Plan Mode`
-- `Language` → `Chinese`
+在 Claude Code 内输入 `/config` 进入设置菜单。
 
 **v2 优势**：用 `/config` 改好设置后，**无需手动同步到配置文件**。因为 `use-model` 不会覆盖其他字段，设置会自动保留。
 
@@ -291,94 +321,82 @@ notepad "$env:USERPROFILE\bin\use-model.ps1"
 ```bash
 /model kimi-for-coding         # 切换到 Kimi 模型
 /model MiniMax-M3              # 切换到 MiniMax 模型
-/model GLM-5.1                 # 切换到智谱 GLM-5.1 模型
-/model GLM-5-Turbo             # 切换到智谱 GLM-5-Turbo 模型
+/model GLM-5.1                 # 切换到智谱 GLM-5.1
+/model GLM-5-Turbo             # 切换到智谱 GLM-5-Turbo
 ```
 
-**注意**：`/model` 命令只切换模型名称，不改 BASE_URL。如需真正切换 Provider，必须用 `use-model` 后重启 Claude Code。
+**注意**：`/model` 只切换模型名称，不改 BASE_URL。真正切换 Provider 用 `use-model`。
 
 ## MCP 配置
 
-MCP 配置在 `~/.claude.json`，与 `settings.json`（Provider 配置）**完全独立**：
+MCP 配置在 `~/.claude.json`，与 `settings.json` **完全独立**：
 - `use-model` 切换 Provider 不会影响 MCP
 - MCP 在所有 Provider 下都可使用
 
-### 查看已启用的 MCP
 ```bash
+# 查看已启用的 MCP
 cat ~/.claude.json | grep mcpServers -A20
-```
 
-### 查看已安装的插件
-```bash
+# 查看已安装的插件
 cat ~/.claude/plugins/installed_plugins.json
 ```
 
 ## 常见问题
 
 ### 1. `ck` / `cz` 等命令 not found
-**macOS / Linux**：
-```bash
-source ~/.zshrc
-```
-**Windows**：关闭并重新打开 PowerShell，或执行 `. $PROFILE`。
+**macOS / Linux**：`source ~/.zshrc`
+**Windows**：重新打开 PowerShell，或 `. $PROFILE`
 
 ### 2. 切换后插件/权限丢失
-确认你使用的是 v2 的 `use-model` 脚本，而不是 v1 的 `use-kimi`/`use-minimax`/`use-zhipu`（cp 覆盖方式）。v2 只改模型字段，不会丢失其他配置。
-
-检查别名是否正确：
+确认使用 v2 的 `use-model`，不是 v1 的 `cp` 方式：
 ```bash
 # 正确（v2）
 alias ck='use-model kimi && claude --effort max'
-
 # 错误（v1，会丢插件）
 alias ck='use-kimi && claude --effort max'
 ```
 
-### 3. 智谱配置后 API 连接失败
-确保 `ANTHROPIC_BASE_URL` 是 `https://open.bigmodel.cn/api/anthropic`（Claude 兼容端点），不是 `api/coding/paas/v4`（OpenAI 兼容端点）。
+### 3. 状态栏不显示模型名 / 显示 Unknown
+确保：
+1. `~/.claude/helpers/statusline.js` 存在
+2. `settings.json` 中 `statusLine` 是 **object 格式**（不是 string）
+3. `statusline.js` 使用 `process.env.ANTHROPIC_MODEL || 'Unknown'`
 
-### 4. Default permission mode 不生效
-原因：环境变量 `CLAUDE_CODE_PERMISSIONS=auto-approve` 覆盖了 `settings.json` 设置。
-解决：从 `~/.zshrc` 或 PowerShell Profile 中删除该行。
+### 4. 智谱配置后 API 连接失败
+确保 `ANTHROPIC_BASE_URL` 是 `https://open.bigmodel.cn/api/anthropic`。
 
-### 5. `/model` 切换后 API 地址没变
-`/model` 只改模型名称，不改 BASE_URL。需要 `use-model` + 重启 Claude Code。
+### 5. Default permission mode 不生效
+检查环境变量 `CLAUDE_CODE_PERMISSIONS=auto-approve` 是否覆盖了设置。
 
-### 6. MiniMax 不认识 `kimi-for-coding` 模型
-MiniMax API 会忽略请求中的模型名称，直接用自己的模型。BASE_URL 决定了实际使用的 API。
+### 6. `/model` 切换后 API 地址没变
+`/model` 只改名称。切换 Provider 用 `use-model` + 重启。
 
-### 7. 智谱模型切换不生效
-智谱 Coding Plan 需要通过 `ANTHROPIC_DEFAULT_*_MODEL` 环境变量配置。确保 `use-model` 脚本的 PROFILES 中包含完整映射。
+### 7. MiniMax 不认识 `kimi-for-coding` 模型
+MiniMax API 忽略模型名称，BASE_URL 决定实际 API。
 
-### 8. Windows PowerShell 中文切换标语显示乱码
-在 PowerShell Profile 开头加上 `chcp 65001 > $null`，确保控制台代码页是 UTF-8。
+### 8. Windows PowerShell 中文乱码
+PowerShell Profile 开头加 `chcp 65001 > $null`。
 
-### 9. Windows PowerShell Profile 加载报"字符串缺少终止符"
-将 Profile 文件保存为 **UTF-8 with BOM**（VS Code：右下角编码 → `Save with Encoding` → `UTF-8 with BOM`）。
+### 9. Windows PowerShell Profile 报"字符串缺少终止符"
+保存为 **UTF-8 with BOM**。
 
-### 10. Claude Code 启动仍进入初始化/登录界面
-检查 `~/.claude.json` 是否包含 `"hasCompletedOnboarding": true` 字段。
+### 10. Claude Code 启动仍进入登录界面
+检查 `~/.claude.json` 包含 `"hasCompletedOnboarding": true`。
 
 ## v1 迁移指南
 
-如果你之前用的是 v1（`cp` 覆盖方式），按以下步骤迁移：
-
-1. **安装 use-model 脚本**（见上方安装步骤）
+1. **安装 use-model 脚本**（见安装步骤）
 2. **更新 Shell 别名**：
    ```bash
-   # 删除旧别名（在 ~/.zshrc 中）
+   # 删除旧别名
    # alias use-kimi='cp ...'
-   # alias use-minimax='cp ...'
-   # alias use-zhipu='cp ...'
-
    # 替换为新别名
    alias ck='use-model kimi && claude --effort max'
    alias cm='use-model minimax && claude --effort max'
    alias cz='use-model zhipu && claude --effort max'
    ```
-3. **将当前 settings.json 同步到 use-model 脚本**：
-   - 把当前 settings.json 中 `env` 的 API Key 填入 `use-model` 的 `PROFILES`
-4. **可选：删除旧模板文件**（不再需要）
+3. **将 API Key 填入 use-model 脚本**
+4. **可选：删除旧模板文件**
    ```bash
    rm ~/.claude/settings-kimi.json
    rm ~/.claude/settings-minimax.json
@@ -389,27 +407,12 @@ MiniMax API 会忽略请求中的模型名称，直接用自己的模型。BASE_
 
 | 用途 | macOS / Linux | Windows |
 |------|---------------|---------|
-| 当前生效配置 | `~/.claude/settings.json` | `C:\Users\用户名\.claude\settings.json` |
+| 当前配置 | `~/.claude/settings.json` | `C:\Users\用户名\.claude\settings.json` |
 | 切换脚本 | `~/npm-global/bin/use-model` | `C:\Users\用户名\bin\use-model.ps1` |
-| 备份文件 | `~/.claude/settings.json.bak` | `C:\Users\用户名\.claude\settings.json.bak` |
+| 状态栏脚本 | `~/.claude/helpers/statusline.js` | `C:\Users\用户名\.claude\helpers\statusline.js` |
+| 备份 | `~/.claude/settings.json.bak` | `C:\Users\用户名\.claude\settings.json.bak` |
 | Shell 配置 | `~/.zshrc` | PowerShell Profile |
-| 跳过登录配置 | `~/.claude.json` | `C:\Users\用户名\.claude.json` |
-
-## 验证 API 连接
-
-```bash
-# 测试智谱 GLM
-curl https://open.bigmodel.cn/api/anthropic/v1/models \
-  -H "Authorization: Bearer <ZHIPU_KEY>"
-
-# 测试 Kimi
-curl https://api.kimi.com/coding/v1/models \
-  -H "Authorization: Bearer <KIMI_KEY>"
-
-# 测试 MiniMax
-curl https://api.minimaxi.com/anthropic/v1/models \
-  -H "Authorization: Bearer <MINIMAX_KEY>"
-```
+| 跳过登录 | `~/.claude.json` | `C:\Users\用户名\.claude.json` |
 
 ## 命令速查
 
@@ -419,21 +422,17 @@ cm              → MiniMax API + max 思考强度
 cz              → 智谱 GLM API + max 思考强度
 cc              → 不切换 API + max 思考强度
 
-use-model kimi      → 仅切换到 Kimi 配置
-use-model zhipu     → 仅切换到智谱 GLM 配置
-use-model minimax   → 仅切换到 MiniMax 配置
-
-/model GLM-5.1           → 切换模型（不换 API，不推荐）
-/model kimi-for-coding   → 切换模型（不换 API，不推荐）
+use-model kimi      → 仅切换到 Kimi
+use-model zhipu     → 仅切换到智谱 GLM
+use-model minimax   → 仅切换到 MiniMax
 
 /config         → 设置界面
-/effort         → 思考强度（仅当前会话）
 /mcp            → 查看 MCP 工具列表
 /plugins        → 查看插件列表
 ```
 
 ## 参考资料
 
-- 月之暗面普通 API 官方文档：https://platform.kimi.com/docs/guide/agent-support
-- 智谱 Claude Code 接入文档：https://docs.bigmodel.cn/cn/guide/develop/claude
+- 月之暗面 API 文档：https://platform.kimi.com/docs/guide/agent-support
+- 智谱 Claude Code 接入：https://docs.bigmodel.cn/cn/guide/develop/claude
 - 智谱 Coding Plan 快速开始：https://docs.bigmodel.cn/cn/coding-plan/quick-start
