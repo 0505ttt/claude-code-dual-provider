@@ -4,7 +4,7 @@
 
 **绕过 Claude 官方登录，AI 自动帮你配置 Kimi / MiniMax / 智谱 GLM 三个国产大模型 Provider，一条命令随时切换**
 
-**v2 更新：智能切换脚本，切换模型不再丢失插件、权限和 MCP 配置**
+**v2 更新：智能切换脚本 + 状态栏模型名显示，切换模型不再丢失插件、权限和 MCP 配置**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![macOS](https://img.shields.io/badge/platform-macOS-blue.svg)]()
@@ -22,6 +22,7 @@
 - 绕过 Claude Code 官方登录（免账号）
 - 配置 Kimi / MiniMax / 智谱 GLM 三个国产 API Provider
 - 安装 `use-model` 智能切换脚本，一条命令切换 Provider + 启动
+- 配置状态栏，自动显示当前使用的模型名称
 
 | Provider | 模型 | 特点 |
 |----------|------|------|
@@ -37,6 +38,7 @@
 | 插件 | **每次切换丢失** | 完整保留 |
 | 权限 | **每次切换丢失** | 完整保留 |
 | MCP | **每次切换丢失** | 完整保留 |
+| 状态栏 | 显示硬编码模型名 | 自动显示实际模型名 |
 | 安装新插件后再切 | 插件消失 | 不受影响 |
 | 备份 | 无 | 自动备份 + 损坏恢复 |
 | 并发保护 | 无 | 文件锁 + 运行检测 |
@@ -88,13 +90,15 @@ AI 读取 SKILL.md 中的配置指南
 AI 自动完成：
   ├── 创建 ~/.claude.json（绕过官方登录）
   ├── 安装 use-model 切换脚本到 PATH
+  ├── 安装 statusline.js 到 ~/.claude/helpers/
+  ├── 配置 settings.json（含 statusLine）
   ├── 配置 Shell 别名（ck / cm / cz / cc）
   └── 验证配置是否生效
         ↓
 三个 Provider 全部就绪
-  ├── ck → use-model kimi + 启动
-  ├── cm → use-model minimax + 启动
-  └── cz → use-model zhipu + 启动
+  ├── ck → use-model kimi + 启动 → 状态栏显示 kimi-for-coding
+  ├── cm → use-model minimax + 启动 → 状态栏显示 MiniMax-M3
+  └── cz → use-model zhipu + 启动 → 状态栏显示 GLM-5.1
 ```
 
 ## 命令速查
@@ -158,6 +162,16 @@ AI 自动完成：
 </details>
 
 <details>
+<summary><b>状态栏不显示模型名 / 显示 Unknown</b></summary>
+
+确保：
+1. `~/.claude/helpers/statusline.js` 文件存在
+2. `settings.json` 中 `statusLine` 配置格式正确（object 格式，不是 string）
+3. `statusline.js` 使用 `process.env.ANTHROPIC_MODEL || 'Unknown'` 读取模型名
+
+</details>
+
+<details>
 <summary><b>智谱配置后 API 连接失败</b></summary>
 
 确保 `ANTHROPIC_BASE_URL` 是 `https://open.bigmodel.cn/api/anthropic`（Claude 兼容端点），不是 `api/coding/paas/v4`（OpenAI 兼容端点）。
@@ -182,11 +196,13 @@ AI 自动完成：
 
 ```
 claude-code-dual-provider/
-├── README.md          # 项目说明（安装和使用方法）
-├── SKILL.md           # Skill 文件（AI 读取的完整配置指南）
-├── use-model          # Mac/Linux 智能切换脚本
-├── use-model.ps1      # Windows PowerShell 智能切换脚本
-└── LICENSE            # MIT License
+├── README.md              # 项目说明（安装和使用方法）
+├── SKILL.md               # Skill 文件（AI 读取的完整配置指南）
+├── use-model              # Mac/Linux 智能切换脚本
+├── use-model.ps1          # Windows PowerShell 智能切换脚本
+├── helpers/
+│   └── statusline.js      # 状态栏脚本（自动显示模型名）
+└── LICENSE                # MIT License
 ```
 
 ## 参考链接
