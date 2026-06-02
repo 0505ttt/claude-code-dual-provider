@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""
+Claude Code 模型切换工具 v3
+只修改 settings.json 中的模型相关字段，保留插件、权限、MCP 等所有其他配置
+
+安装：将此文件放到 PATH 中的任意目录（如 ~/npm-global/bin/ 或 /usr/local/bin/）
+配置：修改下方 PROFILES 中的 API Key 为你的真实 Key
+"""
+import json, sys, os, shutil, subprocess
+
+SETTINGS = os.path.expanduser("~/.claude/settings.json")
+BACKUP = os.path.expanduser("~/.claude/settings.json.bak")
+LOCK = os.path.expanduser("~/.claude/settings.json.lock")
+MODEL_KEYS = [
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+]
+
+# ===== 在这里填入你的真实 API Key =====
+PROFILES = {
+    "kimi": {
+        "ANTHROPIC_BASE_URL": "https://api.kimi.com/coding/",
+        "ANTHROPIC_AUTH_TOKEN": "sk-kimi-你的Kimi-Key",
+        "ANTHROPIC_MODEL": "kimi-for-coding",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "kimi-for-coding",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "kimi-for-coding",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "kimi-for-coding",
+    },
+    "zhipu": {
+        "ANTHROPIC_BASE_URL": "https://open.bigmodel.cn/api/anthropic",
+        "ANTHROPIC_AUTH_TOKEN": "你的智谱API_Key",
+        "ANTHROPIC_MODEL": "GLM-5.1",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "GLM-5.1",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "GLM-5.1",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "GLM-5-Turbo",
+    },
+    "minimax": {
+        "ANTHROPIC_BASE_URL": "https://api.minimaxi.com/anthropic",
+        "ANTHROPIC_AUTH_TOKEN": "sk-cp-你的MiniMax-Key",
+        "ANTHROPIC_MODEL": "MiniMax-M3",
+        "ANTHROPIC_DEFAULT_SONNET_MODEL": "MiniMax-M3",
+        "ANTHROPIC_DEFAULT_OPUS_MODEL": "MiniMax-M3",
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL": "MiniMax-M2.7-highspeed",
+    },
+}
+
+LABELS = {
+    "kimi": "Kimi (月之暗面)",
+    "zhipu": "智谱/GLM",
+    "minimax": "MiniMax",
+}
+
+def check_running_sessions():
+    try:
+        result = subprocess.run(
+            ["pgrep", "-fl", "claude"],
+            capture_output=True, text=True, timeout=3
+        )
+        lines = [l for l in result.stdout.strip().split("\n")
+                 if l and "use-model" not in l and "pgrep" not in l]
+        return len(lines) > 0
+    except Exception:
+        return False
+
+def acquire_lock():
+    import fcntl
+    lock_file = open(LOCK, 'w')
+    try:
+        fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        return lock_file
+    except (IOError, OSError):
+        print("❌ 另一个切换操作正在进行，请稍后再试")
+        sys.exit(1)
+
+def get_current_profile(settings):
+    env = settings.get("env", {})
+    for name, profile in PROFILES.items():
+        if env.get("ANTHROPIC_MODEL") == profile["ANTHROPIC_MODEL"]:
+            return name
+    return None
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2 or sys.argv[1] not in PROFILES:
+        available = "|".join(PROFILES.keys())
+        print(f"Usage: use-model <{available}>")
+        sys.exit(1)
+
+    profile = sys.argv[1]
+
+    if check_running_sessions():
+        print("⚠️  检测到 Claude Code 正在运行！")
+        print("   运行中切换模型可能导致配置不一致")
+        try:
+            answer = input("   仍要继续？(y/N): ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            sys.exit(0)
+        if answer != 'y':
+            print("   已取消")
+            sys.exit(0)
+
+    lock_fd = acquire_lock()
+
+    try:
+        with open(SETTINGS) as f:
+            settings = json.load(f)
+    except json.JSONDecodeError:
+        print("❌ settings.json 已损坏")
+        if os.path.exists(BACKUP):
+            shutil.copy2(BACKUP, SETTINGS)
+            with open(SETTINGS) as f:
+                settings = json.load(f)
+            print("✅ 已从备份恢复")
+        else:
+            print("❌ 无备份可用")
+            sys.exit(1)
+    except FileNotFoundError:
+        print("❌ settings.json 不存在")
+        sys.exit(1)
+
+    current = get_current_profile(settings)
+    if current == profile:
+        print(f"ℹ️  已经是 {LABELS[profile]}，无需切换")
+        sys.exit(0)
+
+    shutil.copy2(SETTINGS, BACKUP)
+
+    if "env" not in settings:
+        settings["env"] = {}
+    for key in MODEL_KEYS:
+        if key in PROFILES[profile]:
+            settings["env"][key] = PROFILES[profile][key]
+
+    tmp = SETTINGS + ".tmp"
+    with open(tmp, 'w') as f:
+        json.dump(settings, f, indent=2, ensure_ascii=False)
+    os.rename(tmp, SETTINGS)
+
+    import fcntl
+    fcntl.flock(lock_fd, fcntl.LOCK_UN)
+    lock_fd.close()
+
+    old_label = LABELS.get(current, "未知") if current else "未知"
+    print(f"✅ {old_label} → {LABELS[profile]}")
+    print(f"   插件: {len(settings.get('enabledPlugins', {}))} 个 | 权限: {len(settings.get('permissions', {}).get('allow', []))} 条")
