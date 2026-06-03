@@ -85,16 +85,16 @@ if ($currentPath -notlike "*$binDir*") {
 ```bash
 mkdir -p ~/.claude/helpers
 
-curl -o ~/.claude/helpers/statusline.js \
-  https://raw.githubusercontent.com/0505ttt/claude-code-dual-provider/main/helpers/statusline.js
+curl -o ~/.claude/helpers/statusline.cjs \
+  https://raw.githubusercontent.com/0505ttt/claude-code-dual-provider/main/helpers/statusline.cjs
 ```
 
 **Windows PowerShell：**
 
 ```powershell
 New-Item -ItemType Directory -Path "$env:USERPROFILE\.claude\helpers" -Force | Out-Null
-Invoke-WebRequest -Uri "https://raw.githubusercontent.com/0505ttt/claude-code-dual-provider/main/helpers/statusline.js" `
-  -OutFile "$env:USERPROFILE\.claude\helpers\statusline.js"
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/0505ttt/claude-code-dual-provider/main/helpers/statusline.cjs" `
+  -OutFile "$env:USERPROFILE\.claude\helpers\statusline.cjs"
 ```
 
 ### 第三步：配置 Shell 别名
@@ -173,7 +173,7 @@ cat > ~/.claude/settings.json << 'EOF'
   "language": "chinese",
   "statusLine": {
     "type": "command",
-    "command": "node ~/.claude/helpers/statusline.js"
+    "command": "node ~/.claude/helpers/statusline.cjs"
   }
 }
 EOF
@@ -200,7 +200,7 @@ New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
   "language": "chinese",
   "statusLine": {
     "type": "command",
-    "command": "node ~/.claude/helpers/statusline.js"
+    "command": "node ~/.claude/helpers/statusline.cjs"
   }
 }
 '@ | Set-Content "$claudeDir\settings.json" -Encoding UTF8
@@ -217,17 +217,17 @@ cz    # 用智谱 GLM 启动
 
 ## 状态栏配置
 
-状态栏脚本 `statusline.js` 会自动读取 `ANTHROPIC_MODEL` 环境变量，显示当前使用的模型名称。
+状态栏脚本 `statusline.cjs` 通过 Claude Code 会话数据自动显示当前模型名称，无需手动配置。
 
 **关键配置：**
 
-1. 脚本位置：`~/.claude/helpers/statusline.js`
-2. 模型名读取：`process.env.ANTHROPIC_MODEL || 'Unknown'`
+1. 脚本位置：`~/.claude/helpers/statusline.cjs`
+2. 模型名读取：自动从 Claude Code 会话数据获取（stdin JSON），无需环境变量
 3. settings.json 中 `statusLine` 格式：
 ```json
 "statusLine": {
   "type": "command",
-  "command": "node ~/.claude/helpers/statusline.js"
+  "command": "node ~/.claude/helpers/statusline.cjs"
 }
 ```
 
@@ -235,7 +235,7 @@ cz    # 用智谱 GLM 启动
 ```json
 "statusLine": {
   "type": "command",
-  "command": "node %USERPROFILE%\\.claude\\helpers\\statusline.js"
+  "command": "node %USERPROFILE%\\.claude\\helpers\\statusline.cjs"
 }
 ```
 
@@ -358,9 +358,9 @@ alias ck='use-kimi && claude --effort max'
 
 ### 3. 状态栏不显示模型名 / 显示 Unknown
 确保：
-1. `~/.claude/helpers/statusline.js` 存在
+1. `~/.claude/helpers/statusline.cjs` 存在
 2. `settings.json` 中 `statusLine` 是 **object 格式**（不是 string）
-3. `statusline.js` 使用 `process.env.ANTHROPIC_MODEL || 'Unknown'`
+3. `statusline.cjs` 已正确安装（模型名从会话数据自动获取）
 
 ### 4. 智谱配置后 API 连接失败
 确保 `ANTHROPIC_BASE_URL` 是 `https://open.bigmodel.cn/api/anthropic`。
@@ -409,7 +409,7 @@ PowerShell Profile 开头加 `chcp 65001 > $null`。
 |------|---------------|---------|
 | 当前配置 | `~/.claude/settings.json` | `C:\Users\用户名\.claude\settings.json` |
 | 切换脚本 | `~/npm-global/bin/use-model` | `C:\Users\用户名\bin\use-model.ps1` |
-| 状态栏脚本 | `~/.claude/helpers/statusline.js` | `C:\Users\用户名\.claude\helpers\statusline.js` |
+| 状态栏脚本 | `~/.claude/helpers/statusline.cjs` | `C:\Users\用户名\.claude\helpers\statusline.cjs` |
 | 备份 | `~/.claude/settings.json.bak` | `C:\Users\用户名\.claude\settings.json.bak` |
 | Shell 配置 | `~/.zshrc` | PowerShell Profile |
 | 跳过登录 | `~/.claude.json` | `C:\Users\用户名\.claude.json` |
