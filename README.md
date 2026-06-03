@@ -90,7 +90,7 @@ AI 读取 SKILL.md 中的配置指南
 AI 自动完成：
   ├── 创建 ~/.claude.json（绕过官方登录）
   ├── 安装 use-model 切换脚本到 PATH
-  ├── 安装 statusline.js 到 ~/.claude/helpers/
+  ├── 安装 statusline.cjs 到 ~/.claude/helpers/
   ├── 配置 settings.json（含 statusLine）
   ├── 配置 Shell 别名（ck / cm / cz / cc）
   └── 验证配置是否生效
@@ -165,9 +165,9 @@ AI 自动完成：
 <summary><b>状态栏不显示模型名 / 显示 Unknown</b></summary>
 
 确保：
-1. `~/.claude/helpers/statusline.js` 文件存在
+1. `~/.claude/helpers/statusline.cjs` 文件存在
 2. `settings.json` 中 `statusLine` 配置格式正确（object 格式，不是 string）
-3. `statusline.js` 使用 `process.env.ANTHROPIC_MODEL || 'Unknown'` 读取模型名
+3. `statusline.cjs` 已正确安装（模型名从会话数据自动获取）
 
 </details>
 
@@ -201,7 +201,7 @@ claude-code-dual-provider/
 ├── use-model              # Mac/Linux 智能切换脚本
 ├── use-model.ps1          # Windows PowerShell 智能切换脚本
 ├── helpers/
-│   └── statusline.js      # 状态栏脚本（自动显示模型名）
+│   └── statusline.cjs      # 状态栏脚本（自动显示模型名）
 └── LICENSE                # MIT License
 ```
 
